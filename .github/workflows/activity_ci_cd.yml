@@ -5,7 +5,8 @@ on:
     branches: 
       - dev
       - master
-      - ACT-609
+      - staging
+      - ACT-692
   pull_request:
     branches: 
       - dev
@@ -72,7 +73,13 @@ jobs:
         DB_SIZE: ${{ secrets.DB_SIZE }}
         PG_VERSION: ${{ secrets.PG_VERSION }}
         DB_NAME_DEV_ENV: ${{ secrets.DB_NAME_DEV_ENV}}
-      
+        # staging vars, some are reused from dev_env
+        BACKEND_BUCKET_STAGING: ${{ secrets.BACKEND_BUCKET_STAGING }}
+        STATE_FILE_STAGING: ${{ secrets.STATE_FILE_STAGING }}
+        CLUSTER_NAME_STAGING: ${{ secrets.CLUSTER_NAME_STAGING }}
+        K8S_VERSION_STAGING: ${{ secrets.K8S_VERSION_STAGING }}
+        DB_NAME_STAGING: ${{ secrets.DB_NAME_STAGING }}
+
       run: |
         export TRAVIS_EVENT_TYPE="push"
         chmod +x ci-scripts/create_infrastructure.sh
@@ -112,6 +119,9 @@ jobs:
         GOOGLE_MAP_API_KEY_DEV: ${{ secrets.GOOGLE_MAP_API_KEY_DEV }}
         APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
         REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
+        # staging variables. others are reused from dev
+        ACTIVITY_CE_DB_NAME_STAGING: ${{ secrets.ACTIVITY_CE_DB_NAME_STAGING }}
+        APPLICATION_ENV_STAGING: ${{ secrets.APPLICATION_ENV_STAGING }}
 
       run: |
         export TRAVIS_COMMIT=$GITHUB_SHA
@@ -120,29 +130,33 @@ jobs:
         bash ./ci-scripts/build_docker_image.sh
 
 
-  Deploy:
-    needs: Build_and_push_image
-    runs-on: ubuntu-latest
-    container:
-      image: yagami22/ci-deploy-image 
-    steps:
-    - uses: actions/checkout@v1
-    - name: Deploy to DO
-      env:
-        APPLICATION_ENV: ${{ secrets.APPLICATION_ENV }}
-        CLUSTER_NAME_DEV_ENV: ${{ secrets.CLUSTER_NAME_DEV_ENV }}
-        SERVICE_ACCESS_TOKEN: ${{ secrets.SERVICE_ACCESS_TOKEN }}
-        DOCKER_HUB_USERNM: ${{ secrets.DOCKER_HUB_USERNM }}
-        DOCKER_HUB_PASSWD: ${{ secrets.DOCKER_HUB_PASSWD }}
-        B64_TOKEN: ${{ secrets.B64_TOKEN }}
-        DEFAULT_NOTIFY: ${{ secrets.DEFAULT_NOTIFY }}
-        RATE_LIMIT: ${{ secrets.RATE_LIMIT }}
-        HOST_DOMAIN: ${{ secrets.HOST_DOMAIN }}
-        APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
-        REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
-      run: |
-        export TRAVIS_COMMIT=$GITHUB_SHA
-        export FILE_PATH="/github/home/.docker/config.json"
-        export TRAVIS_EVENT_TYPE="push"
-        chmod +x ci-scripts/deployment.sh
-        bash ./ci-scripts/deployment.sh
+  # Deploy:
+  #   needs: Build_and_push_image
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: yagami22/ci-deploy-image 
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - name: Deploy to DO
+  #     env:
+  #       APPLICATION_ENV: ${{ secrets.APPLICATION_ENV }}
+  #       CLUSTER_NAME_DEV_ENV: ${{ secrets.CLUSTER_NAME_DEV_ENV }}
+  #       SERVICE_ACCESS_TOKEN: ${{ secrets.SERVICE_ACCESS_TOKEN }}
+  #       DOCKER_HUB_USERNM: ${{ secrets.DOCKER_HUB_USERNM }}
+  #       DOCKER_HUB_PASSWD: ${{ secrets.DOCKER_HUB_PASSWD }}
+  #       B64_TOKEN: ${{ secrets.B64_TOKEN }}
+  #       DEFAULT_NOTIFY: ${{ secrets.DEFAULT_NOTIFY }}
+  #       RATE_LIMIT: ${{ secrets.RATE_LIMIT }}
+  #       HOST_DOMAIN: ${{ secrets.HOST_DOMAIN }}
+  #       APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+  #       REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
+  #       # staging variables
+  #       CLUSTER_NAME_STAGING: ${{ secrets.CLUSTER_NAME_STAGING }}
+  #       HOST_DOMAIN_STAGING: ${{ secrets.HOST_DOMAIN_STAGING }}
+  #       APPLICATION_ENV_STAGING: ${{ secrets.APPLICATION_ENV_STAGING }}
+  #     run: |
+  #       export TRAVIS_COMMIT=$GITHUB_SHA
+  #       export FILE_PATH="/github/home/.docker/config.json"
+  #       export TRAVIS_EVENT_TYPE="push"
+  #       chmod +x ci-scripts/deployment.sh
+  #       bash ./ci-scripts/deployment.sh
